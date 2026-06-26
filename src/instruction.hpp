@@ -1,0 +1,5 @@
+// instruction.hpp
+#ifndef RV32I_INSTRUCTION_HPP
+#define RV32I_INSTRUCTION_HPP
+
+#endif // RV32I_INSTRUCTION_HPP
