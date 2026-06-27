@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 
+#include "instruction.hpp"
 #include "simulator.hpp"
 
 // Nombres ABI de los 32 registros
@@ -45,6 +46,11 @@ static bool parse_reg(const std::string& s, int& out) {
 
 static void print_reg(const Simulator& sim, int r) {
     std::printf("x%-2d (%-4s) = 0x%08X\n", r, ABI[r], sim.read_reg(r));
+}
+
+static std::string disasm_at(const Simulator& sim, uint32_t addr) {
+    uint32_t raw = sim.memory().read32(addr);
+    return disassemble(decode(raw), addr);
 }
 
 int main(int argc, char** argv) {
@@ -88,12 +94,18 @@ int main(int argc, char** argv) {
             }
             uint32_t done = 0;
             try {
-                for (; done < n && !sim.halted(); ++done) sim.step();
+                for (; done < n && !sim.halted(); ++done) {
+                    uint32_t pc_now = sim.pc();
+                    std::string text = disasm_at(sim, pc_now);
+                    sim.step();
+                    if (n <= 30)   // no floodear la consola si son muchas
+                        std::printf("0x%08X: %s\n", pc_now, text.c_str());
+                }
             } catch (const std::exception& e) {
                 std::printf("Error de ejecucion en 0x%08X: %s\n", sim.pc(), e.what());
             }
-            if (n == 1) std::cout << "Ejecutando instruccion.\n";
-            else std::printf("Ejecutadas %u instrucciones (pc = 0x%08X).\n", done, sim.pc());
+            if (n > 1)
+                std::printf("Ejecutadas %u instrucciones (pc = 0x%08X).\n", done, sim.pc());
         }
         else if (cmd == "run" || cmd == "continue" || cmd == "c") {
             uint32_t count = 0;
@@ -151,6 +163,23 @@ int main(int argc, char** argv) {
                 }
             }
         }
+        else if (cmd == "disasm" || cmd == "dis" || cmd == "d") {
+            uint32_t addr, count = 8;
+            if (args.size() < 2 || !parse_uint(args[1], addr)) {
+                std::cout << "Uso: disasm <addr> [N]\n";
+            } else {
+                if (args.size() >= 3) parse_uint(args[2], count);
+                try {
+                    for (uint32_t i = 0; i < count; ++i) {
+                        uint32_t a = addr + i * 4;
+                        uint32_t raw = sim.memory().read32(a);
+                        const char* mark = (a == sim.pc()) ? "->" : "  ";
+                        std::printf("%s 0x%08X: %08X   %s\n",
+                                    mark, a, raw, disassemble(decode(raw), a).c_str());
+                    }
+                } catch (const std::exception& e) { std::printf("%s\n", e.what()); }
+            }
+        }
         else if (cmd == "help" || cmd == "h" || cmd == "?") {
             std::cout <<
                 "Comandos:\n"
@@ -159,6 +188,7 @@ int main(int argc, char** argv) {
                 "  run | continue | c  ejecuta hasta el final (o bucle propio)\n"
                 "  regs [rN ...] | r   muestra registros (todos, o los pedidos)\n"
                 "  mem <ini> <fin>     vuelca memoria en hex + ASCII\n"
+                "  disasm <addr> [N]   desensambla N instrucciones\n"   // <-- linea nueva
                 "  help | exit\n";
         }
         else {

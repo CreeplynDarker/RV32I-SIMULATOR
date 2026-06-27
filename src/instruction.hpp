@@ -3,6 +3,7 @@
 #define RV32I_INSTRUCTION_HPP
 
 #include <cstdint>
+#include <string> // <-- nuevo para el desensamblador
 
 enum class Format { R, I, S, B, U, J };
 
@@ -21,5 +22,6 @@ struct Instruction {
 Format      format_of(uint32_t opcode);
 int32_t     extract_imm(uint32_t raw, Format fmt);
 Instruction decode(uint32_t raw);
+std::string disassemble(const Instruction& in, uint32_t pc);   // <-- nuevo
 
 #endif // RV32I_INSTRUCTION_HPP
