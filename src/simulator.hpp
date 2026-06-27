@@ -31,6 +31,7 @@ private:
 
     uint32_t fetch();
     void execute(const Instruction& in, uint32_t& next_pc);  // <-- nuevo
+    void handle_ecall();   // <-- nuevo (Fase 8)
 };
 
 #endif // RV32I_SIMULATOR_HPP

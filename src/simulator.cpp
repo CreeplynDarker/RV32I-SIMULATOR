@@ -1,8 +1,14 @@
 #include "simulator.hpp"
 #include "instruction.hpp"
 
+/*void Simulator::load_program(const std::string& path) {
+    mem_.load_raw(path);
+}*/
+
 void Simulator::load_program(const std::string& path) {
     mem_.load_raw(path);
+    pc_ = 0;
+    regs_[2] = 0x00FFFFF0;   // sp cerca del tope de los 16 MB (como CPUlator)
 }
 
 uint32_t Simulator::read_reg(int i) const {

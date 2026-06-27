@@ -167,6 +167,11 @@ void Simulator::execute(const Instruction& in, uint32_t& next_pc)
         write_reg(in.rd, pc_ + uint32_t(in.imm));
         break;
 
+    // ---------- ecall (0x73) ----------
+    case 0x73:
+        handle_ecall();
+        break;
+
     default:
         throw std::runtime_error("opcode no implementado todavia");
     }
