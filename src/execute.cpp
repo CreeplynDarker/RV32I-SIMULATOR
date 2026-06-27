@@ -114,6 +114,59 @@ void Simulator::execute(const Instruction& in, uint32_t& next_pc)
             break;
         }
 
+    // ---------- Branches (0x63): si se cumple, next_pc = pc + imm ----------
+    case 0x63:
+        {
+            uint32_t a = read_reg(in.rs1);
+            uint32_t b = read_reg(in.rs2);
+            bool taken = false;
+            switch (in.funct3)
+            {
+            case 0x0: taken = (a == b);
+                break; // beq
+            case 0x1: taken = (a != b);
+                break; // bne
+            case 0x4: taken = (int32_t(a) < int32_t(b));
+                break; // blt  (signed)
+            case 0x5: taken = (int32_t(a) >= int32_t(b));
+                break; // bge  (signed)
+            case 0x6: taken = (a < b);
+                break; // bltu (unsigned)
+            case 0x7: taken = (a >= b);
+                break; // bgeu (unsigned)
+            default: throw std::runtime_error("branch funct3 invalido");
+            }
+            if (taken) next_pc = pc_ + uint32_t(in.imm);
+            break;
+        }
+
+    // ---------- jal (0x6F): rd = pc+4 ; next_pc = pc + imm ----------
+    case 0x6F:
+        {
+            write_reg(in.rd, pc_ + 4);
+            next_pc = pc_ + uint32_t(in.imm);
+            break;
+        }
+
+    // ---------- jalr (0x67): rd = pc+4 ; next_pc = (rs1 + imm) & ~1 ----------
+    case 0x67:
+        {
+            uint32_t target = (read_reg(in.rs1) + uint32_t(in.imm)) & ~1u; // calcula ANTES
+            write_reg(in.rd, pc_ + 4); // de escribir rd
+            next_pc = target;
+            break;
+        }
+
+    // ---------- lui (0x37): rd = imm (12 bits bajos ya en 0) ----------
+    case 0x37:
+        write_reg(in.rd, uint32_t(in.imm));
+        break;
+
+    // ---------- auipc (0x17): rd = pc + imm ----------
+    case 0x17:
+        write_reg(in.rd, pc_ + uint32_t(in.imm));
+        break;
+
     default:
         throw std::runtime_error("opcode no implementado todavia");
     }
